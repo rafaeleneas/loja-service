@@ -1,0 +1,91 @@
+# ---------------------------------------------------------------------------------------------
+# Manual: https://dev.azure.com/SEF-MG/SEFHUB/_wiki/wikis/SEFHUB.wiki/145/Como-utilizar-a-Pipeline-
+# Versão: 1.1.2
+# ---------------------------------------------------------------------------------------------
+
+name: "$(Build.Repository.Name) (Build $(Build.BuildId) for branch $(Build.SourceBranchName))"
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - staging
+      - feature/*
+      - hotfix/*
+  paths:
+    exclude:
+      - pipeline/*
+
+parameters:
+  - name: PIPELINE_VERSION
+    type: string
+    default: refs/tags/v1.1.2
+  - name: STRATEGY
+    type: string
+    default: gitflow
+
+resources:
+  repositories:
+    - repository: HUB
+      type: git
+      name: HUB/pipelineTemplates
+      ref: ${{ parameters.PIPELINE_VERSION }}
+
+    - repository: qaRepo
+      type: git
+      name: loja-service # Ajuste esse valor de acordo com o seu projeto
+      ref: main
+
+variables:
+  # --------------------------------------------------------------------------------------------------------------
+  # Grupo de variáveis (Library)
+  - group: loja-service # Ajuste esse valor de acordo com o seu projeto
+  - group: pipeline-multistack-defaults
+
+  # --------------------------------------------------------------------------------------------------------------
+  # Definição de equipe/divisão
+  - name: EQUIPE
+    value: "equipedev" # Ajuste esse valor de acordo com o seu projeto
+
+  # --------------------------------------------------------------------------------------------------------------
+  # Endpoint para monitoramento com Prometheus
+  - name: PROMETHEUS_PATH
+    value: "/api/loja/actuator/prometheus" # Ajuste esse valor de acordo com o seu projeto
+
+  # --------------------------------------------------------------------------------------------------------------
+  # Essas variáveis são específicas para projetos BACKEND
+  - name: JDK_VERSION
+    value: "JDK21" # Ajuste esse valor de acordo com o seu projeto
+
+  - name: PATH_DB_SCRIPTS
+    value: "" # Ajuste esse valor de acordo com o seu projeto (incluir barra no final)
+
+  # --------------------------------------------------------------------------------------------------------------
+  # Essas variáveis são específicas para projetos FRONTEND
+  - name: NODE_VERSION
+    value: "NODE21" # Ajuste esse valor de acordo com o seu projeto
+
+  # --------------------------------------------------------------------------------------------------------------
+  # Definições gerais
+  - name: REDIS_ENABLE
+    value: "false" # Ajuste esse valor de acordo com o seu projeto (true/false)
+
+  - name: QA_ENABLE
+    value: "false" # Ajuste esse valor de acordo com o seu projeto (true/false)
+
+  - name: JMETER_ENABLE
+    value: "false" # Ajuste esse valor de acordo com o seu projeto (true/false)
+
+  - name: MIGRATE_ENABLE
+    value: "false" # Ajuste esse valor de acordo com o seu projeto (true/false)
+
+  - name: VERSIONING_TYPE
+    value: "semver" # Ajuste esse valor de acordo com o seu projeto (true/false)
+    
+  # --------------------------------------------------------------------------------------------------------------
+
+stages:
+  - template: pipeline-multistack/start-pipeline.yaml@SEFHUB
+    parameters:
+      STRATEGY: "${{ parameters.STRATEGY }}"

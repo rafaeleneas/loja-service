@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------------------------------------
+# Configurações do ambiente de homologação (stg):
+# Versão: 1.1.2
+# ---------------------------------------------------------------------------------------------
+
+variables:
+  # ---------------------------------------------------------------------------------------------
+  # Definições de deploy
+  serviceType: "ClusterIP"
+  serviceAppPort: "8080"
+  
+  # ---------------------------------------------------------------------------------------------
+  # Definições de health check
+  healthPath: "/api/loja/actuator/health"
+  healthDelaySeconds: "120"
+  healthPeriodSeconds: "30"
+  healthTimeoutSeconds: "15"
+  healthThreshold: "1"
+
+  # ---------------------------------------------------------------------------------------------
+  # Definições de recursos
+  resourcesLimitCpu: "512m"
+  resourcesLimitMemory: "2Gi"
+  resourcesRequestCpu: "256m"
+  resourcesRequestMemory: "256Mi"
+
+  # ---------------------------------------------------------------------------------------------
+  # Definições de acesso
+  ingressEnabled: "true"
+  ingressHost: "$(Build.Repository.Name)-stg"
+  ingressHostPath: "/"
+  ingressHostPathType: "Prefix"
+  additionalHost: ""
+
+  # ---------------------------------------------------------------------------------------------
+  # Definições de variáveis de ambiente
+  ENVS: |-
+    SPRING_PROFILES_ACTIVE: "stg"
+    SWAGGER_URL: "https://loja-service-stg.lua.empresa.mg.gov.br"
+    KEYCLOAK_URI: "https://keycloak-hom.empresa.mg.gov.br"
+    KEYCLOAK_REALM_INTRANET: "servicosaocontribuinte-intranet"
+
+  # ---------------------------------------------------------------------------------------------
+  # Definições de secrets
+  SECRETS: |-
+    - loja-service
