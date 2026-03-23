@@ -6,12 +6,14 @@ import com.loja.lojaservice.client.pagamento.dto.PagamentoPingResponse;
 import com.loja.lojaservice.client.pagamento.dto.PagamentoRequest;
 import com.loja.lojaservice.client.pagamento.dto.PagamentoResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "app.integrations.pagamento", name = "enabled", havingValue = "true")
 public class PagamentoIntegrationService {
 
     private final PagamentoApiClient pagamentoApiClient;

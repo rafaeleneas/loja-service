@@ -13,7 +13,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 @Configuration
-@Profile({"dev", "stg"})
+@Profile({"dev", "hmg"})
 public class CorsConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {

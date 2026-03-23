@@ -2,10 +2,12 @@ package com.loja.lojaservice.config;
 
 import com.loja.lojaservice.client.pagamento.PagamentoApiClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnProperty(prefix = "app.integrations.pagamento", name = "enabled", havingValue = "true")
 public class WebClientConfiguration extends WebClientBaseConfiguration {
     private static final String REGISTRATION_LOJA_SERVICE_ID = "loja-service";
     private final WebClientsYamlConfig webclientsYamlConfig;

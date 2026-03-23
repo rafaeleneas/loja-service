@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface ProdutoRepository extends JpaRepository<Produto, Long> {
@@ -15,19 +16,27 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     @Query("""
             update Produto p
                set p.estoque = p.estoque - :quantidade,
-                   p.atualizadoEm = CURRENT_TIMESTAMP
+                   p.atualizadoEm = :atualizadoEm
              where p.id = :produtoId
                and p.estoque >= :quantidade
             """)
-    int decrementarEstoqueSeDisponivel(@Param("produtoId") Long produtoId, @Param("quantidade") Integer quantidade);
+    int decrementarEstoqueSeDisponivel(
+            @Param("produtoId") Long produtoId,
+            @Param("quantidade") Integer quantidade,
+            @Param("atualizadoEm") OffsetDateTime atualizadoEm
+    );
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("""
             update Produto p
                set p.estoque = p.estoque + :quantidade,
-                   p.atualizadoEm = CURRENT_TIMESTAMP
+                   p.atualizadoEm = :atualizadoEm
              where p.id = :produtoId
             """)
-    int incrementarEstoque(@Param("produtoId") Long produtoId, @Param("quantidade") Integer quantidade);
+    int incrementarEstoque(
+            @Param("produtoId") Long produtoId,
+            @Param("quantidade") Integer quantidade,
+            @Param("atualizadoEm") OffsetDateTime atualizadoEm
+    );
 }
 

@@ -7,23 +7,11 @@ server:
 keycloak:
   realmExtranet: extranet-realm
   realmIntranet: intranet-realm
-  url: ${KEYCLOAK_URL:${KEYCLOAK_URI:http://localhost:8081}}
+  url: ${KEYCLOAK_URL}
   username: loja-backend
 
 servicos:
-  pagamento-service: ${PAGAMENTO_SERVICE_URL:http://localhost:8090}
-
-web-clients:
-  clients:
-    loja-service:
-      id: loja-service
-      client-id: ${LOJA_SERVICE_INTRACLIENT_ID:loja-service}
-      client-secret: ${LOJA_SERVICE_INTRACLIENT_SECRET}
-      authorization-grant-type: client_credentials
-      token-uri: ${LOJA_SERVICE_INTRACLIENT_TOKEN_URI:${keycloak.url}/realms/${keycloak.realmIntranet}/protocol/openid-connect/token}
-      issuer-uri: ${LOJA_SERVICE_INTRACLIENT_ISSUER_URI:${keycloak.url}/realms/${keycloak.realmIntranet}}
-      scope: ${LOJA_SERVICE_INTRACLIENT_SCOPE:openid}
-
+  pagamento-service: ${PAGAMENTO_SERVICE_URL}
 
 springdoc:
   swagger-ui:
@@ -36,16 +24,15 @@ springdoc:
       scopeSeparator: " "
       additionalQueryStringParams: {}
       useBasicAuthenticationWithAccessCodeGrant: false
-  url: ${SWAGGER_URL:http://localhost:8080}${server.servlet.context-path}
+  url: ${SWAGGER_URL}${server.servlet.context-path}
 
 spring:
-
   config:
     import:
       - "optional:configtree:/var/local/secrets/"
       - "optional:file:.env[.properties]"
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP:loja-service}
       auto-offset-reset: earliest
@@ -67,14 +54,16 @@ spring:
   data.web.pageable.one-indexed-parameters: true
   datasource:
     hikari:
-      idleTimeout: 240000  # Tempo em milissegundos (4 minutos)
-
+      idleTimeout: 240000
+  h2:
+    console:
+      enabled: true
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:${keycloak.url}/realms/${keycloak.realmExtranet}}
-          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:${keycloak.url}/realms/${keycloak.realmExtranet}/protocol/openid-connect/certs}
+          issuer-uri: ${keycloak.url}/realms/${keycloak.realmExtranet}
+          jwk-set-uri: ${keycloak.url}/realms/${keycloak.realmExtranet}/protocol/openid-connect/certs
 
 management:
   endpoint:
@@ -95,25 +84,9 @@ logging:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"
 
 app:
+  integrations:
+    pagamento:
+      enabled: false
   messaging:
     topics:
       solicitacao-pagamento: ${KAFKA_TOPIC_SOLICITACAO_PAGAMENTO:pagamento.solicitado.topic}
-
----
-spring.config.activate.on-profile: dev
-spring.datasource.url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/lojadb}
-spring.datasource.driver-class-name: org.postgresql.Driver
-spring.datasource.username: ${DATABASE_USERNAME:${USERNAME_DEV:loja}}
-spring.datasource.password: ${DATABASE_PASSWORD:${PASSWORD_DEV:loja}}
-spring.jpa.hibernate.ddl-auto: none
-
----
-spring.config.activate.on-profile: test
-spring.datasource.url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/schema.sql';
-spring.datasource.driver-class-name: org.h2.Driver
-spring.jpa.database-platform: org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto: create-drop
-
----
-
-

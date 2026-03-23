@@ -185,7 +185,11 @@ public class PedidoService {
     }
 
     private void reservarEstoque(Long produtoId, Integer quantidade) {
-        int linhasAtualizadas = produtoRepository.decrementarEstoqueSeDisponivel(produtoId, quantidade);
+        int linhasAtualizadas = produtoRepository.decrementarEstoqueSeDisponivel(
+                produtoId,
+                quantidade,
+                OffsetDateTime.now()
+        );
         if (linhasAtualizadas == 0) {
             throw new LojaException("Estoque insuficiente para o produto " + produtoId + ".");
         }
@@ -243,7 +247,11 @@ public class PedidoService {
 
     private void devolverEstoque(Pedido pedido) {
         pedido.getItens().forEach(item -> {
-            int linhasAtualizadas = produtoRepository.incrementarEstoque(item.getProduto().getId(), item.getQuantidade());
+            int linhasAtualizadas = produtoRepository.incrementarEstoque(
+                    item.getProduto().getId(),
+                    item.getQuantidade(),
+                    OffsetDateTime.now()
+            );
             if (linhasAtualizadas == 0) {
                 throw new LojaException("Falha ao devolver estoque do produto " + item.getProduto().getId() + ".");
             }
