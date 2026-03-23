@@ -6,9 +6,9 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:${keycloak.url}/realms/${keycloak.realmExtranet}}
           jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:${keycloak.url}/realms/${keycloak.realmExtranet}/protocol/openid-connect/certs}
   datasource:
-    url: ${DATABASE_URL:jdbc:h2:mem:lojadb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;INIT=RUNSCRIPT FROM 'classpath:sql/schema.sql'}
+    url: ${DATABASE_URL:jdbc:h2:mem:lojadb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
     username: ${DATABASE_USERNAME:sa}
     password: ${DATABASE_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: ${DATABASE_DDL_AUTO:none}
+      ddl-auto: ${DATABASE_DDL_AUTO:update}
