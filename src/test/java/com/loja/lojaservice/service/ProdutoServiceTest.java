@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,7 +47,7 @@ class ProdutoServiceTest {
     private ProdutoService produtoService;
 
     @Test
-    void listarTodos_naoDeveLancarExcecao_quandoExistiremProdutos() {
+    void listarTodos_deveRetornarListaDeProdutos_quandoExistiremProdutos() {
         Produto produto1 = novoProdutoExistente(true);
         produto1.setId(1L);
         Produto produto2 = novoProdutoExistente(true);
@@ -68,7 +69,7 @@ class ProdutoServiceTest {
     }
 
     @Test
-    void buscarPorId_naoDeveLancarExcecao_quandoProdutoExistir() {
+    void buscarPorId_deveRetornarProduto_quandoProdutoExistir() {
         Produto produto = novoProdutoExistente(true);
         ProdutoResponseDTO response = novaResponse(1L, "Racao");
 
@@ -90,7 +91,7 @@ class ProdutoServiceTest {
     }
 
     @Test
-    void criar_naoDeveLancarExcecao_quandoDadosValidos() {
+    void criar_deveCriarProduto_quandoDadosForemValidos() {
         ProdutoRequestDTO request = new ProdutoRequestDTO(
                 "Racao Nova",
                 "Pacote 10kg",
@@ -114,36 +115,26 @@ class ProdutoServiceTest {
         verify(produtoRepository).save(entity);
     }
 
-    @Test
-    void atualizar_deveLancarExcecao_quandoProdutoNaoExistir() {
-        ProdutoRequestDTO request = new ProdutoRequestDTO(
-                "Racao", "desc", new BigDecimal("10.00"), 1, true
-        );
-
-        doNothing().when(produtoValidator).validateCriacaoOuAtualizacao(request);
-        when(produtoRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(EntidadeNaoEncontradaException.class, () -> produtoService.atualizar(999L, request));
-    }
-
     @ParameterizedTest
     @MethodSource("atualizarCenariosInvalidosProvider")
-    void atualizar_deveLancarExcecao_quandoCenarioInvalido(
-            Produto existente,
+    void atualizar_deveLancarExcecao_quandoDadosForemInvalidos(
+            Long id,
+            Optional<Produto> produtoEncontrado,
             ProdutoRequestDTO request,
-            boolean produtoVinculadoPedidoPago
+            Consumer<ProdutoServiceTest> setupAdicional,
+            Class<? extends Exception> tipoExcecao
     ) {
-        when(produtoRepository.findById(1L)).thenReturn(Optional.of(existente));
         doNothing().when(produtoValidator).validateCriacaoOuAtualizacao(request);
-        if (produtoVinculadoPedidoPago) {
-            when(itemPedidoService.existeItemComProdutoEmPedidoPago(1L)).thenReturn(true);
+        when(produtoRepository.findById(id)).thenReturn(produtoEncontrado);
+        if (setupAdicional != null) {
+            setupAdicional.accept(this);
         }
 
-        assertThrows(LojaException.class, () -> produtoService.atualizar(1L, request));
+        assertThrows(tipoExcecao, () -> produtoService.atualizar(id, request));
     }
 
     @Test
-    void atualizar_naoDeveLancarExcecao_quandoDadosValidos() {
+    void atualizar_deveAtualizarProduto_quandoDadosForemValidos() {
         Produto existente = novoProdutoExistente(true);
         ProdutoRequestDTO request = new ProdutoRequestDTO(
                 "Racao Atualizada",
@@ -171,7 +162,7 @@ class ProdutoServiceTest {
     }
 
     @Test
-    void remover_naoDeveLancarExcecao_quandoProdutoExistir() {
+    void remover_deveExcluirProduto_quandoProdutoExistir() {
         Produto existente = novoProdutoExistente(true);
         when(produtoRepository.findById(1L)).thenReturn(Optional.of(existente));
 
@@ -190,19 +181,32 @@ class ProdutoServiceTest {
     private static Stream<Arguments> atualizarCenariosInvalidosProvider() {
         return Stream.of(
                 Arguments.of(
-                        novoProdutoExistente(true),
-                        new ProdutoRequestDTO("Racao", "desc", BigDecimal.ZERO, 1, true),
-                        false
-                ),
-                Arguments.of(
-                        novoProdutoExistente(false),
-                        new ProdutoRequestDTO("Racao", "desc", new BigDecimal("10.00"), 1, false),
-                        false
-                ),
-                Arguments.of(
-                        novoProdutoExistente(true),
+                        999L,
+                        Optional.empty(),
                         new ProdutoRequestDTO("Racao", "desc", new BigDecimal("10.00"), 1, true),
-                        true
+                        null,
+                        EntidadeNaoEncontradaException.class
+                ),
+                Arguments.of(
+                        1L,
+                        Optional.of(novoProdutoExistente(true)),
+                        new ProdutoRequestDTO("Racao", "desc", BigDecimal.ZERO, 1, true),
+                        null,
+                        LojaException.class
+                ),
+                Arguments.of(
+                        1L,
+                        Optional.of(novoProdutoExistente(false)),
+                        new ProdutoRequestDTO("Racao", "desc", new BigDecimal("10.00"), 1, false),
+                        null,
+                        LojaException.class
+                ),
+                Arguments.of(
+                        1L,
+                        Optional.of(novoProdutoExistente(true)),
+                        new ProdutoRequestDTO("Racao", "desc", new BigDecimal("10.00"), 1, true),
+                        (Consumer<ProdutoServiceTest>) test -> when(test.itemPedidoService.existeItemComProdutoEmPedidoPago(1L)).thenReturn(true),
+                        LojaException.class
                 )
         );
     }
@@ -231,4 +235,3 @@ class ProdutoServiceTest {
         );
     }
 }
-
