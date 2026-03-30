@@ -9,6 +9,11 @@ spring:
     url: ${DATABASE_URL:jdbc:h2:mem:lojadb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
     username: ${DATABASE_USERNAME:sa}
     password: ${DATABASE_PASSWORD:}
+  sql:
+    init:
+      mode: embedded
+      schema-locations: classpath:sql/schema.sql
+      data-locations: classpath:sql/data.sql
   jpa:
     hibernate:
       ddl-auto: ${DATABASE_DDL_AUTO:update}
