@@ -5,24 +5,14 @@ on:
     branches:
       - main
       - hmg
-  workflow_dispatch:
-    inputs:
-      deploy_environment:
-        description: Environment to deploy
-        required: true
-        default: hmg
-        type: choice
-        options:
-          - hmg
-          - prd
 
 concurrency:
-  group: backend-ci-${{ github.event_name == 'workflow_dispatch' && inputs.deploy_environment || github.ref_name == 'main' && 'prd' || github.ref_name }}
+  group: backend-ci-${{ github.ref_name == 'main' && 'prd' || github.ref_name }}
   cancel-in-progress: true
 
 env:
   AWS_REGION: us-east-1
-  DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_environment || github.ref_name == 'main' && 'prd' || github.ref_name }}
+  DEPLOY_ENV: ${{ github.ref_name == 'main' && 'prd' || github.ref_name }}
   INFRA_REPOSITORY: rafaeleneas/loja-infra # Update with your infrastructure repository name (owner/repo)
 
 permissions:
@@ -33,7 +23,7 @@ jobs:
   build-publish-and-notify:
     name: Build, Publish, and Notify GitOps
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_environment || github.ref_name == 'main' && 'prd' || github.ref_name }}
+    environment: ${{ github.ref_name == 'main' && 'prd' || github.ref_name }}
 
     steps:
       - name: Checkout application repository
