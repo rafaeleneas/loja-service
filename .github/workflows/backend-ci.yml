@@ -4,15 +4,25 @@ on:
   push:
     branches:
       - main
+      - hmg
   workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: Environment to deploy
+        required: true
+        default: hmg
+        type: choice
+        options:
+          - hmg
+          - prd
 
 concurrency:
-  group: backend-ci-${{ github.ref }}
+  group: backend-ci-${{ github.event_name == 'workflow_dispatch' && inputs.deploy_environment || github.ref_name == 'main' && 'prd' || github.ref_name }}
   cancel-in-progress: true
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: loja-backend/hgm/backend
+  DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_environment || github.ref_name == 'main' && 'prd' || github.ref_name }}
   INFRA_REPOSITORY: rafaeleneas/loja-infra # Update with your infrastructure repository name (owner/repo)
 
 permissions:
@@ -23,10 +33,30 @@ jobs:
   build-publish-and-notify:
     name: Build, Publish, and Notify GitOps
     runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_environment || github.ref_name == 'main' && 'prd' || github.ref_name }}
 
     steps:
       - name: Checkout application repository
         uses: actions/checkout@v4
+
+      - name: Validate deployment target
+        env:
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+        run: |
+          case "${DEPLOY_ENV}:${GITHUB_REF_NAME}" in
+            hmg:hmg|prd:main)
+              ;;
+            *)
+              echo "::error::Environment ${DEPLOY_ENV} must be deployed from its matching branch."
+              echo "::error::Use branch hmg for hmg and branch main for prd. Current branch: ${GITHUB_REF_NAME}"
+              exit 1
+              ;;
+          esac
+
+          if [ -z "${ECR_REPOSITORY}" ]; then
+            echo "::error::GitHub Environment variable ECR_REPOSITORY is not configured for ${DEPLOY_ENV}."
+            exit 1
+          fi
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -52,9 +82,10 @@ jobs:
         id: publish-image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG"
+          IMAGE_URI="$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           docker build -t "$IMAGE_URI" .
           docker push "$IMAGE_URI"
           echo "image_uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
@@ -70,4 +101,4 @@ jobs:
             --url "https://api.github.com/repos/${{ env.INFRA_REPOSITORY }}/dispatches" \
             --header "Accept: application/vnd.github+json" \
             --header "Authorization: Bearer $GH_TOKEN" \
-            --data "{\"event_type\":\"loja-service-image-published\",\"client_payload\":{\"sha\":\"$COMMIT_SHA\",\"ref\":\"$GIT_REF\",\"image\":\"$IMAGE_URI\"}}"
+            --data "{\"event_type\":\"loja-service-image-published\",\"client_payload\":{\"environment\":\"$DEPLOY_ENV\",\"sha\":\"$COMMIT_SHA\",\"ref\":\"$GIT_REF\",\"image\":\"$IMAGE_URI\"}}"
